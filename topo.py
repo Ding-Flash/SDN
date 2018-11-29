@@ -2,10 +2,13 @@ from mininet.net import Mininet
 from mininet.log import setLogLevel
 from mininet.node import RemoteController, OVSSwitch
 from mininet.link import TCLink
+import threading
 
 from mininet.cli import CLI
-
 from config import con_confs, init_topo
+
+from requests import get
+from time import sleep
 
 
 class ModelNet(object):
@@ -45,10 +48,22 @@ class ModelNet(object):
     def run_net(self):
         self.add_device()
         self.build_net()
-        CLI(self.net)
+        self.net.start()
+
+
+def get_flow():
+    while True:
+        sleep(5)
+        print "fetch flow from http://localhost:5000/"
+        print get("http://localhost:5000/s").text
 
 
 if __name__ == "__main__":
     setLogLevel('info')
     network = ModelNet()
     network.run_net()
+    t1 = threading.Thread(target=network.run_net)
+    t2 = threading.Thread(target=get_flow)
+    threads = [t1, t2]
+    for t in threads:
+        t.start()
