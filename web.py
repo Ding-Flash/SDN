@@ -1,24 +1,20 @@
-from flask import Flask, request
-from flask_restful import Resource, Api
-
+from flask import Flask
+from json import dumps
 app = Flask(__name__)
-api = Api(app)
 
-flows = {}
-
-
-class UpdataFLow(Resource):
-
-    def get(self, control_id):
-        return {control_id: flows[control_id]}
-
-    def put(self, control_id):
-        flows[control_id] = request.form['data']
-        print {control_id: flows[control_id]}
-        return {control_id: flows[control_id]}
+flow = {}
 
 
-api.add_resource(UpdataFLow, '/<string:control_id>')
+@app.route("/addflow/<flow_t>")
+def addflow(flow_t):
+    flow['flow'] = flow_t
+    return flow_t
+
+
+@app.route('/getflow')
+def getflow():
+    return dumps(flow)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

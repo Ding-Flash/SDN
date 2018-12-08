@@ -6,7 +6,7 @@ from ryu.controller.handler import MAIN_DISPATCHER, DEAD_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.lib import hub
 
-from requests import put
+from requests import get
 
 
 class SimpleMonitor13(simple_switch_13.SimpleSwitch13):
@@ -64,7 +64,7 @@ class SimpleMonitor13(simple_switch_13.SimpleSwitch13):
                              stat.match['in_port'], stat.match['eth_dst'],
                              stat.instructions[0].actions[0].port,
                              stat.packet_count, stat.byte_count)
-            put('http://localhost:5000/s', data={'stat.packet_count': str(stat.packet_count)}).json()
+            # get('http://localhost:5000/addflow/1')
 
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def _port_stats_reply_handler(self, ev):
