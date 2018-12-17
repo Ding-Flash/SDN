@@ -1,60 +1,68 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/python
+
 from mininet.net import Mininet
-from mininet.node import RemoteController, OVSSwitch
-from mininet.link import TCLink
+from mininet.node import Controller, RemoteController, OVSController
+from mininet.node import CPULimitedHost, Host, Node
+from mininet.node import OVSKernelSwitch, UserSwitch
+from mininet.node import IVSSwitch
+from mininet.cli import CLI
+from mininet.log import setLogLevel, info
+from mininet.link import TCLink, Intf
+from subprocess import call
 
 
-from config import con_confs, base_topo
+def network():
 
-from requests import get
+    net = Mininet(topo=None, build=False, ipBase='10.0.0.0/8')
+
+    info('*** Adding controller\n')
+    c0 = net.addController(name='c0', controller=RemoteController, ip='127.0.0.1', protocol='tcp', port=6633)
+    c1 = net.addController(name='c1', controller=RemoteController, ip='127.0.0.1', protocol='tcp', port=6634)
+
+    info('*** Add switches\n')
+    s1 = net.addSwitch('s1', cls=OVSKernelSwitch, dpid='1')
+    s2 = net.addSwitch('s2', cls=OVSKernelSwitch, dpid='2')
+    s3 = net.addSwitch('s3', cls=OVSKernelSwitch, dpid='3')
+    s4 = net.addSwitch('s4', cls=OVSKernelSwitch, dpid='4')
+
+    info('*** Add hosts\n')
+    h1 = net.addHost('h1', cls=Host, ip='10.0.0.1', defaultRoute=None)
+    h2 = net.addHost('h2', cls=Host, ip='10.0.0.2', defaultRoute=None)
+    h3 = net.addHost('h3', cls=Host, ip='10.0.0.3', defaultRoute=None)
+    h4 = net.addHost('h4', cls=Host, ip='10.0.0.4', defaultRoute=None)
+    h5 = net.addHost('h5', cls=Host, ip='10.0.0.5', defaultRoute=None)
+    h6 = net.addHost('h6', cls=Host, ip='10.0.0.6', defaultRoute=None)
+    h7 = net.addHost('h7', cls=Host, ip='10.0.0.7', defaultRoute=None)
+    h8 = net.addHost('h8', cls=Host, ip='10.0.0.8', defaultRoute=None)
+
+    info( '*** Add links\n')
+    net.addLink(s3, h5)
+    net.addLink(s3, h6)
+    net.addLink(s4, h7)
+    net.addLink(s4, h8)
+    net.addLink(s1, h1)
+    net.addLink(s1, h2)
+    net.addLink(s2, h3)
+    net.addLink(s2, h4)
+
+    info('*** Starting network\n')
+    net.build()
+    info('*** Starting controllers\n')
+    for controller in net.controllers:
+        controller.start()
+
+    info('*** Starting switches\n')
+    net.get('s1').start([c0])
+    net.get('s2').start([c0])
+    net.get('s3').start([c1])
+    net.get('s4').start([c1])
+
+    info('*** Post configure switches and hosts\n')
+    return net
 
 
-class ModelNet(object):
+if __name__ == '__main__':
+    setLogLevel('info')
+    net = network()
+    CLI(net)
 
-    def __init__(self):
-        """
-        根据 base_topo 中的num信息，构建拓扑图
-        """
-        self.host_num = base_topo['host_num']
-        self.sw_num = base_topo['sw_num']
-        self.con_num = base_topo['con_num']
-        self.hosts, self.sw, self.con = [], [], []
-        self.net = Mininet(
-            controller=None, switch=OVSSwitch, link=TCLink
-        )
-
-    def add_device(self):
-        """
-        根据配置信息向net中添加设备
-        """
-        self.hosts = [self.net.addHost("h%s" % idx) for idx in xrange(self.host_num)]
-        self.sw = [self.net.addSwitch("s%d" % idx) for idx in xrange(self.sw_num)]
-        for con_conf in con_confs:
-            con = RemoteController(**con_conf)
-            self.net.addController(con)
-            self.con.append(con)
-
-    def build_net(self):
-        """
-        设备之间连接创建组网图
-        """
-        for sw_idx, hosts in base_topo['s2h'].items():
-            for idx in hosts:
-                self.net.addLink(self.sw[sw_idx], self.hosts[idx])
-        self.net.build()
-        for con in self.con:
-            con.start()
-        for con, sws in base_topo['c2s'].items():
-            for idx in sws:
-                self.sw[idx].start([self.con[con]])
-
-    def ping_test(self):
-        self.net.ping()
-
-    def run_net(self):
-        """
-        启动网络
-        """
-        self.add_device()
-        self.build_net()
-        self.net.start()

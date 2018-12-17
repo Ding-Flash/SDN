@@ -9,10 +9,10 @@ from ryu.lib import hub
 from requests import get
 
 
-class SimpleMonitor13(simple_switch_13.SimpleSwitch13):
+class Monitor13(simple_switch_13.SimpleSwitch13):
 
     def __init__(self, *args, **kwargs):
-        super(SimpleMonitor13, self).__init__(*args, **kwargs)
+        super(Monitor13, self).__init__(*args, **kwargs)
         self.datapaths = {}
         self.monitor_thread = hub.spawn(self._monitor)
 
@@ -69,7 +69,6 @@ class SimpleMonitor13(simple_switch_13.SimpleSwitch13):
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def _port_stats_reply_handler(self, ev):
         body = ev.msg.body
-
         self.logger.info('datapath         port     '
                          'rx-pkts  rx-bytes rx-error '
                          'tx-pkts  tx-bytes tx-error')
