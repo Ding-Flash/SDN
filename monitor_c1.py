@@ -14,6 +14,7 @@ import json
 
 port_url = "http://127.0.0.1:5000/addall/c1"
 flow_url = "http://127.0.0.1:5000/addflow/c1"
+miss_url = "http://127.0.0.1:5000/addmiss/c1"
 sleep_time = 5
 
 
@@ -65,20 +66,6 @@ class SimpleMonitor(simple_switch_13.SimpleSwitch13):
         byte_count   转发的比特数
         """
         body = ev.msg.body
-        # self.logger.info('datapath         '
-        #                  'in-port  eth-dst           '
-        #                  'out-port packets  bytes')
-        # self.logger.info('---------------- '
-        #                  '-------- ----------------- '
-        #                  '-------- -------- --------')
-        # for stat in sorted([flow for flow in body if flow.priority == 1],
-        #                    key=lambda flow: (flow.match['in_port'],
-        #                                      flow.match['eth_dst'])):
-        #     self.logger.info('%016x %8x %17s %8x %8d %8d',
-        #                      ev.msg.datapath.id,
-        #                      stat.match['in_port'], stat.match['eth_dst'],
-        #                      stat.instructions[0].actions[0].port,
-        #                      stat.packet_count, stat.byte_count)
         flow_table = sorted([flow for flow in body if flow.priority == 1], key=lambda flow: (flow.match['in_port'], flow.match['eth_dst']))
         ports = set()
         rx_packts = defaultdict(list)
@@ -102,7 +89,20 @@ class SimpleMonitor(simple_switch_13.SimpleSwitch13):
                 'tx_bytes': sum(tx_bytes[port])
             }
             print "c1 update %s flow-info" % data['datapath']
-            requests.post(url=flow_url, data=json.dumps(data))
+            requests.post(url=flow_url, data=json.dumps(data))\
+
+        flow_miss = [flow for flow in body if flow.priority == 0]
+        m_packts, m_bytes = 0, 0
+        for stat in flow_miss:
+            m_packts += stat.packet_count
+            m_bytes += stat.byte_count
+        data = {
+            'datapath': str(ev.msg.datapath.id),
+            'packets': m_packts,
+            'bytes': m_bytes,
+        }
+        print "c1 update %s flow-miss-info" % data['datapath']
+        requests.post(url=miss_url, data=json.dumps(data))
 
     @set_ev_cls(ofp_event.EventOFPPortStatsReply, MAIN_DISPATCHER)
     def _port_stats_reply_handler(self, ev):
@@ -118,17 +118,6 @@ class SimpleMonitor(simple_switch_13.SimpleSwitch13):
              tx_errors  该端口发送错误包的个数
         """
         body = ev.msg.body
-        # self.logger.info('datapath         port     '
-        #                  'rx-pkts  rx-bytes rx-error '
-        #                  'tx-pkts  tx-bytes tx-error')
-        # self.logger.info('---------------- -------- '
-        #                  '-------- -------- -------- '
-        #                  '-------- -------- --------')
-        # for stat in sorted(body, key=attrgetter('port_no')):
-        #     self.logger.info('%016x %8x %8d %8d %8d %8d %8d %8d',
-        #                      ev.msg.datapath.id, stat.port_no,
-        #                      stat.rx_packets, stat.rx_bytes, stat.rx_errors,
-        #                      stat.tx_packets, stat.tx_bytes, stat.tx_errors)
         for stat in body:
             data = {
                 'datapath': str(ev.msg.datapath.id)+":"+str(stat.port_no),

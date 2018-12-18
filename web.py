@@ -13,6 +13,10 @@ datapath_c1 = set()
 flow_table_c0 = {}
 flow_table_c1 = {}
 
+# 流表中miss流量、
+flow_miss_c0 = {}
+flow_miss_c1 = {}
+
 # 端口流量监控集合
 flow_port_c0 = {}
 flow_port_c1 = {}
@@ -60,21 +64,50 @@ def addflow(con):
     return request.data
 
 
+@app.route("/addmiss/<con>", methods=['POST'])
+def addmiss(con):
+    if con == "c0":
+        flow_miss= flow_miss_c0
+    else:
+        flow_miss= flow_miss_c1
+    data = json.loads(request.data)
+    try:
+        target = flow_miss[data['datapath']]
+        for k, v in target.items():
+            target[k].append(data[k])
+    except KeyError:
+        flow_miss[data['datapath']] = {
+            'packets': [], 'bytes': [],
+        }
+    print "%s<->%s flow-miss-info update" % (con, data['datapath'])
+    return request.data
+
+
 @app.route('/getall/<con>', methods=['GET'])
 def getall(con):
     flow_table = flow_table_c0 if con == "c0" else flow_table_c1
+    print "get %s port-info" % con
     return json.dumps(flow_table)
 
 
 @app.route('/getflow/<con>', methods=['GET'])
 def getflow(con):
     flow_table = flow_table_c0 if con == 'c0' else flow_table_c1
+    print "get %s flow-info" % con
     return json.dumps(flow_table)
+
+
+@app.route('/getmiss/<con>', methods=['GET'])
+def getmiss(con):
+    flow_miss = flow_miss_c0 if con == 'c0' else flow_miss_c1
+    print "get %s miss-info" % con
+    return json.dumps(flow_miss)
 
 
 @app.route('/getdatapath/<con>', methods=['GET'])
 def getdatapath(con):
     datapath = datapath_c0 if con == 'c0' else datapath_c1
+    print "get %s datapath-info" % con
     return json.dumps({'data': list(datapath)})
 
 
