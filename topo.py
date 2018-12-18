@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/python
 
 from mininet.net import Mininet
@@ -65,4 +66,3 @@ if __name__ == '__main__':
     setLogLevel('info')
     net = network()
     CLI(net)
-
