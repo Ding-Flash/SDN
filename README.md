@@ -43,7 +43,7 @@ net = netowrk()
 3. `getmiss(con)` 获得发送给控制器的流量
 
 **交换器切换控制器**
-1. 使用net获取到交换机 s1 = net.get('s1')
+1. 使用net获取到交换机 `s1 = net.get('s1')`
 2. `s1.start([c0, c1])`
 
 
